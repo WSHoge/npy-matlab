@@ -2,17 +2,27 @@
 
 
 function header = constructNPYheader(dataType, shape, varargin)
+    
+    fortranOrder = true;
+    littleEndian = true;
+    isComplex = false;
 
-	if ~isempty(varargin)
-		fortranOrder = varargin{1}; % must be true/false
-		littleEndian = varargin{2}; % must be true/false
-	else
-		fortranOrder = true;
-		littleEndian = true;
-	end
+    if ~isempty(varargin)
+        if length(varargin) > 0
+            isComplex = varargin{1};
+        end
+        if length(varargin) > 1
+	    fortranOrder = varargin{2}; % must be true/false
+        end
+        if length(varargin) > 2
+	    littleEndian = varargin{3}; % must be true/false
+        end
+    end
 
-    dtypesMatlab = {'uint8','uint16','uint32','uint64','int8','int16','int32','int64','single','double', 'logical'};
+    dtypesMatlab  = {'uint8','uint16','uint32','uint64','int8','int16','int32','int64','single','double', 'logical'};
     dtypesNPY = {'u1', 'u2', 'u4', 'u8', 'i1', 'i2', 'i4', 'i8', 'f4', 'f8', 'b1'};
+    dtypesComplex = {'single', 'double'};
+    dtypesNPYcplx = { 'c8', 'c16' };
 
     magicString = uint8([147 78 85 77 80 89]); %x93NUMPY
     
@@ -28,9 +38,12 @@ function header = constructNPYheader(dataType, shape, varargin)
     else
         dictString = [dictString '>'];
     end
-    
-    dictString = [dictString dtypesNPY{strcmp(dtypesMatlab,dataType)} ''', '];
-    
+
+    if isComplex
+        dictString = [dictString dtypesNPYcplx{strcmp(dtypesComplex,dataType)} ''', '];
+    else
+        dictString = [dictString dtypesNPY{strcmp(dtypesMatlab,dataType)} ''', '];
+    end;
     dictString = [dictString '''fortran_order'': '];
     
     if fortranOrder

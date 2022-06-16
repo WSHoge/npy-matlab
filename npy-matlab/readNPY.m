@@ -7,9 +7,9 @@ function data = readNPY(filename)
 % more.
 %
 
-[shape, dataType, fortranOrder, littleEndian, totalHeaderLength, ~] = readNPYheader(filename);
+hdr = readNPYheader(filename);
 
-if littleEndian
+if hdr.littleEndian
     fid = fopen(filename, 'r', 'l');
 else
     fid = fopen(filename, 'r', 'b');
@@ -17,16 +17,19 @@ end
 
 try
 
-    [~] = fread(fid, totalHeaderLength, 'uint8');
+    [~] = fread(fid, hdr.totalHeaderLength, 'uint8');
 
     % read the data
-    data = fread(fid, prod(shape), [dataType '=>' dataType]);
-
-    if length(shape)>1 && ~fortranOrder
-        data = reshape(data, shape(end:-1:1));
-        data = permute(data, [length(shape):-1:1]);
-    elseif length(shape)>1
-        data = reshape(data, shape);
+    data = fread(fid, prod(hdr.arrayShape)*(2^hdr.isComplex), [hdr.dataType '=>' hdr.dataType]);
+    if (hdr.isComplex)
+        data = data(1:2:end) + j*data(2:2:end);
+    end
+    
+    if length(hdr.arrayShape)>1 && ~hdr.fortranOrder
+        data = reshape(data, hdr.arrayShape(end:-1:1));
+        data = permute(data, [length(hdr.arrayShape):-1:1]);
+    elseif length(hdr.arrayShape)>1
+        data = reshape(data, hdr.arrayShape);
     end
 
     fclose(fid);

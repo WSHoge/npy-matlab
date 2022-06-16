@@ -1,6 +1,6 @@
 
 
-function [arrayShape, dataType, fortranOrder, littleEndian, totalHeaderLength, npyVersion] = readNPYheader(filename)
+function header = readNPYheader(filename)
 % function [arrayShape, dataType, fortranOrder, littleEndian, ...
 %       totalHeaderLength, npyVersion] = readNPYheader(filename)
 %
@@ -22,8 +22,8 @@ end
 
 try
     
-    dtypesMatlab = {'uint8','uint16','uint32','uint64','int8','int16','int32','int64','single','double', 'logical'};
-    dtypesNPY = {'u1', 'u2', 'u4', 'u8', 'i1', 'i2', 'i4', 'i8', 'f4', 'f8', 'b1'};
+    dtypesMatlab = {'uint8','uint16','uint32','uint64','int8','int16','int32','int64','single','double', 'logical', 'float', 'double'};
+    dtypesNPY = {'u1', 'u2', 'u4', 'u8', 'i1', 'i2', 'i4', 'i8', 'f4', 'f8', 'b1', 'c8', 'c16' };
     
     
     magicString = fread(fid, [1 6], 'uint8=>uint8');
@@ -51,8 +51,9 @@ try
     
     littleEndian = ~strcmp(dtNPY(1), '>');
     
-    dataType = dtypesMatlab{strcmp(dtNPY(2:3), dtypesNPY)};
-        
+    dataType = dtypesMatlab{strcmp(dtNPY(2:end), dtypesNPY)};
+    isComplex = strcmp(dtNPY(2), 'c');
+    
     r = regexp(arrayFormat, '''fortran_order''\s*:\s*(\w+)', 'tokens');
     fortranOrder = strcmp(r{1}{1}, 'True');
     
@@ -60,9 +61,15 @@ try
     shapeStr = r{1}{1}; 
     arrayShape = str2num(shapeStr(shapeStr~='L'));
 
-    
     fclose(fid);
-    
+
+    header = struct( 'arrayShape', arrayShape, ...
+                     'dataType', dataType, ...
+                     'isComplex', isComplex, ...
+                     'fortranOrder', fortranOrder, ...
+                     'littleEndian', littleEndian, ...
+                     'totalHeaderLength', totalHeaderLength, ...
+                     'npyVersion', npyVersion );
 catch me
     fclose(fid);
     rethrow(me);

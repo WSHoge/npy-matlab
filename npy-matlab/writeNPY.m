@@ -12,12 +12,17 @@ function writeNPY(var, filename)
 
 shape = size(var);
 dataType = class(var);
+isComplex = ~isreal(var);
 
-header = constructNPYheader(dataType, shape);
+header = constructNPYheader(dataType, shape, isComplex);
 
 fid = fopen(filename, 'w');
 fwrite(fid, header, 'uint8');
-fwrite(fid, var, dataType);
+if isComplex
+    fwrite(fid,[ real(var(:))'; imag(var(:))' ], dataType );
+else
+    fwrite(fid, var, dataType);
+end;
 fclose(fid);
 
 
